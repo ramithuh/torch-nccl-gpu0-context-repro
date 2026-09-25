@@ -23,10 +23,11 @@ run() {  # run <name> <env> [VAR=value ...] -- <repro args>
   local name=$1 env=$2; shift 2
   local vars=(); while [ "$1" != "--" ]; do vars+=("$1"); shift; done; shift
   [[ -n "$FILTER" && "$name" != *"$FILTER"* ]] && return
-  echo "===== $name"
+  echo "===== $name $(date +%T)"
   env PATH="$env/bin:$PATH" "${vars[@]}" \
-    torchrun --standalone --nproc_per_node=2 repro.py "$@" 2>&1 |
-    grep -E "REPRO rank=1|NCCL version|Error"
+    timeout -k 10 180 torchrun --standalone --nproc_per_node=2 repro.py "$@" 2>&1 |
+    stdbuf -oL grep -vE "^\s*$"
+  echo "===== $name exit=${PIPESTATUS[0]} $(date +%T)"   # 124 = timed out
 }
 
 hostname
