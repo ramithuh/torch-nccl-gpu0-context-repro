@@ -34,6 +34,7 @@ hostname
 nvidia-smi --query-gpu=index,name,driver_version --format=csv,noheader
 run nightly_nccl_device_id      "$NIGHTLY"                        -- --variant device_id
 run nightly_nccl_no_device_id   "$NIGHTLY"                        -- --variant no_device_id
+run nightly_nccl_legacy         "$NIGHTLY" TORCH_DIST_USE_NCCL2=0 -- --variant device_id
 run nightly_gloo                "$NIGHTLY"                        -- --variant no_device_id --backend gloo
 run stable_nccl_device_id       "$STABLE"                         -- --variant device_id
 run stable_torch_new_nccl       "$STABLE" LD_PRELOAD="$NEW_NCCL"  -- --variant device_id
