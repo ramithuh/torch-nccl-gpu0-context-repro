@@ -9,11 +9,14 @@
 # Runs every case on one 2-GPU allocation. Submit from the repo root:
 #   NIGHTLY=/path/to/env_torch_nightly STABLE=/path/to/env_torch_stable sbatch run.sbatch
 #   ... sbatch run.sbatch nightly    # only cases whose name contains "nightly"
+#   NPROC=8 ... sbatch --gres=gpu:8 -w <node> run.sbatch nightly_nccl_legacy
+#       # node probe: all 8 GPUs must pass init/barrier/all_reduce/broadcast
 #
 # Each case prints rank 1's CUDA contexts per step; a "gpu0:" entry on rank 1
 # is the bug.
 set -u
 FILTER=${1:-}
+NPROC=${NPROC:-2}
 NIGHTLY=${NIGHTLY:?set NIGHTLY to a python env with the newer torch}
 STABLE=${STABLE:?set STABLE to a python env with the older torch}
 NEW_NCCL=$NIGHTLY/lib/python3.11/site-packages/nvidia/nccl/lib/libnccl.so.2
@@ -25,7 +28,7 @@ run() {  # run <name> <env> [VAR=value ...] -- <repro args>
   [[ -n "$FILTER" && "$name" != *"$FILTER"* ]] && return
   echo "===== $name $(date +%T)"
   env PATH="$env/bin:$PATH" "${vars[@]}" \
-    timeout -k 10 180 torchrun --standalone --nproc_per_node=2 repro.py "$@" 2>&1 |
+    timeout -k 10 180 torchrun --standalone --nproc_per_node=$NPROC repro.py "$@" 2>&1 |
     stdbuf -oL grep -vE "^\s*$"
   echo "===== $name exit=${PIPESTATUS[0]} $(date +%T)"   # 124 = timed out
 }
